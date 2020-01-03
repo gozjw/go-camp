@@ -133,7 +133,7 @@ func newInfoFile() {
 }
 
 func newFile(level string) *os.File {
-	date := time.Now().In(timeLocation).Format(fileName)
+	date = time.Now().In(timeLocation).Format(fileName)
 	fileDir := logDir + "/" + level + "/"
 	var fileName = path.Clean(fileDir + date + ".log")
 	ok := pathExists(fileDir)
@@ -143,7 +143,7 @@ func newFile(level string) *os.File {
 		}
 	} else {
 		if getFileSize(fileName) > logFileMaxSize {
-			renameFile(fileDir, date)
+			renameFile(fileDir)
 		}
 	}
 	file, err := os.OpenFile(fileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0664)
@@ -153,13 +153,12 @@ func newFile(level string) *os.File {
 	return file
 }
 
-func renameFile(infoFileDir, dayDate string) {
+func renameFile(infoFileDir string) {
 	files, _ := ioutil.ReadDir(infoFileDir)
 	var todayFile []os.FileInfo
-	dayDate = time.Now().Format(fileName)
 	for _, onefile := range files {
 		fileName := onefile.Name()
-		if !onefile.IsDir() && strings.Index(fileName, dayDate) == 0 {
+		if !onefile.IsDir() && strings.Index(fileName, date) == 0 {
 			todayFile = append(todayFile, onefile)
 		}
 	}
@@ -172,7 +171,7 @@ func renameFile(infoFileDir, dayDate string) {
 	}
 	for i := range todayFile {
 		os.Rename(infoFileDir+todayFile[i].Name(),
-			infoFileDir+fmt.Sprintf("%s_%d.log", dayDate, len(todayFile)-i))
+			infoFileDir+fmt.Sprintf("%s_%d.log", date, len(todayFile)-i))
 	}
 }
 
