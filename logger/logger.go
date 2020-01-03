@@ -19,10 +19,10 @@ type Config struct {
 }
 
 const (
-	DebugLevel = "dbg"
-	InfoLevel  = "inf"
-	WarnLevel  = "wrn"
-	ErrorLevel = "err"
+	debugLevel = "dbg"
+	infoLevel  = "inf"
+	warnLevel  = "wrn"
+	errorLevel = "err"
 
 	fileName    = "2006-01-02"
 	timeFormart = "2006-01-02 15:04:05"
@@ -76,35 +76,35 @@ func Push(data LogInfo) {
 }
 
 func Debug(params ...interface{}) {
-	info(DebugLevel, params...)
+	info(debugLevel, params...)
 }
 
 func Info(params ...interface{}) {
-	info(InfoLevel, params...)
+	info(infoLevel, params...)
 }
 
 func Warn(params ...interface{}) {
-	info(WarnLevel, params...)
+	info(warnLevel, params...)
 }
 
 func Error(params ...interface{}) {
-	info(ErrorLevel, params...)
+	info(errorLevel, params...)
 }
 
 func Debugf(format string, params ...interface{}) {
-	info(DebugLevel, fmt.Sprintf(format, params...))
+	info(debugLevel, fmt.Sprintf(format, params...))
 }
 
 func Infof(format string, params ...interface{}) {
-	info(InfoLevel, fmt.Sprintf(format, params...))
+	info(infoLevel, fmt.Sprintf(format, params...))
 }
 
 func Warnf(format string, params ...interface{}) {
-	info(WarnLevel, fmt.Sprintf(format, params...))
+	info(warnLevel, fmt.Sprintf(format, params...))
 }
 
 func Errorf(format string, params ...interface{}) {
-	info(ErrorLevel, fmt.Sprintf(format, params...))
+	info(errorLevel, fmt.Sprintf(format, params...))
 }
 
 func info(level string, params ...interface{}) {
@@ -129,7 +129,7 @@ func newInfoFile() {
 	if infoFile != nil {
 		infoFile.Close()
 	}
-	infoFile = newFile(InfoLevel)
+	infoFile = newFile(infoLevel)
 }
 
 func newFile(level string) *os.File {
@@ -182,7 +182,7 @@ func writeLog() {
 	for {
 		select {
 		case info := <-infoChan:
-			if info.Level == DebugLevel || info.Level == WarnLevel || info.Level == ErrorLevel {
+			if info.Level == debugLevel || info.Level == warnLevel || info.Level == errorLevel {
 				file := newFile(info.Level)
 				file.WriteString(formatLine(info))
 				file.Close()
