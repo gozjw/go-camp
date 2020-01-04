@@ -42,6 +42,9 @@ var (
 )
 
 func Init(config Config) {
+	if started {
+		panic("logger started")
+	}
 	if config.LogDir != "" {
 		logDir = config.LogDir
 	}
