@@ -16,6 +16,7 @@ type Config struct {
 	LogFileMaxSize int64
 	TimeLocation   *time.Location
 	ChannelSize    int
+	OutputScreen   bool
 }
 
 const (
@@ -32,13 +33,12 @@ var (
 	logDir               = "./log/"
 	timeLocation         = time.Now().Location()
 	logFileMaxSize int64 = 1 * 1024 * 1024 * 1024
+	outputScreen         = false
 
 	date    string
 	started bool
-
-	infoFile *os.File
-
-	infoChan chan *LogInfo
+	fileMap map[string]*os.File
+	logChan chan *Log
 )
 
 func Init(config Config) {
@@ -51,28 +51,28 @@ func Init(config Config) {
 	if config.TimeLocation != nil {
 		timeLocation = config.TimeLocation
 	}
-
+	outputScreen = config.OutputScreen
 	if config.ChannelSize == 0 {
-		infoChan = make(chan *LogInfo, 1024)
+		logChan = make(chan *Log, 1024)
 	} else {
-		infoChan = make(chan *LogInfo, config.ChannelSize)
+		logChan = make(chan *Log, config.ChannelSize)
 	}
-
-	go writeLog()
+	fileMap = make(map[string]*os.File)
+	go start()
 }
 
-type LogInfo struct {
+type Log struct {
 	Level   string
 	Time    time.Time
 	Line    string
 	Message string
 }
 
-func Push(data LogInfo) {
+func Push(log Log) {
 	if !started {
 		panic("logger not start")
 	}
-	infoChan <- &data
+	logChan <- &log
 }
 
 func Debug(params ...interface{}) {
@@ -116,20 +116,13 @@ func info(level string, params ...interface{}) {
 	message = strings.Join(messageList, " ")
 	function, _, _, _ := runtime.Caller(2)
 	file, line := runtime.FuncForPC(function).FileLine(function)
-	info := LogInfo{
+	log := Log{
 		Level:   level,
 		Time:    time.Now(),
 		Line:    fmt.Sprintf("%s:%d", file, line),
 		Message: message,
 	}
-	Push(info)
-}
-
-func newInfoFile() {
-	if infoFile != nil {
-		infoFile.Close()
-	}
-	infoFile = newFile(infoLevel)
+	Push(log)
 }
 
 func newFile(level string) *os.File {
@@ -175,29 +168,41 @@ func renameFile(infoFileDir string) {
 	}
 }
 
-func writeLog() {
+func start() {
 	started = true
 	defer func() { started = false }()
 	for {
 		select {
-		case info := <-infoChan:
-			if info.Level == debugLevel || info.Level == warnLevel || info.Level == errorLevel {
-				file := newFile(info.Level)
-				file.WriteString(formatLine(info))
-				file.Close()
-			} else {
-				if infoFile == nil {
-					newInfoFile()
-				}
-				stat, _ := infoFile.Stat()
-				if stat.Size() > logFileMaxSize ||
-					strings.Index(info.Time.In(timeLocation).Format(fileName), date) != 0 {
-					newInfoFile()
-				}
-				infoFile.WriteString(formatLine(info))
-			}
+		case log := <-logChan:
+			write(log)
 		}
 	}
+}
+
+func write(log *Log) {
+	var file *os.File
+	var ok bool
+	var needNewFile bool
+	if file, ok = fileMap[log.Level]; ok {
+		stat, _ := file.Stat()
+		if stat.Size() > logFileMaxSize ||
+			strings.Index(log.Time.In(timeLocation).
+				Format(fileName), date) != 0 {
+			needNewFile = true
+		}
+	} else {
+		needNewFile = true
+	}
+
+	if needNewFile {
+		if file != nil {
+			file.Close()
+		}
+		file = newFile(log.Level)
+		fileMap[log.Level] = file
+	}
+
+	file.WriteString(formatLine(log))
 }
 
 func pathExists(path string) bool {
@@ -226,16 +231,18 @@ func getSuffix(fileName string) int {
 	return suffix
 }
 
-func formatLine(info *LogInfo) string {
+func formatLine(log *Log) string {
 	var result = ""
-	msgList := strings.Split(info.Message, "\n")
+	msgList := strings.Split(log.Message, "\n")
 	for i := range msgList {
 		result = result + fmt.Sprintf("%s [%s] [%s] %s",
-			info.Time.In(timeLocation).Format(timeFormart),
-			strings.ToUpper(info.Level),
-			info.Line,
+			log.Time.In(timeLocation).Format(timeFormart),
+			strings.ToUpper(log.Level),
+			log.Line,
 			msgList[i]) + "\n"
 	}
-	fmt.Print(result)
+	if outputScreen {
+		fmt.Print(result)
+	}
 	return result
 }
