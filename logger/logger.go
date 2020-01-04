@@ -183,7 +183,17 @@ func write(log *Log) {
 	var file *os.File
 	var ok bool
 	var needNewFile bool
-	if file, ok = fileMap[log.Level]; ok {
+	var level string
+
+	switch log.Level {
+	case debugLevel, warnLevel, errorLevel:
+		level = log.Level
+	default:
+		// 自定义level打印info中
+		level = infoLevel
+	}
+
+	if file, ok = fileMap[level]; ok {
 		stat, _ := file.Stat()
 		if stat.Size() > logFileMaxSize ||
 			strings.Index(log.Time.In(timeLocation).
@@ -198,8 +208,8 @@ func write(log *Log) {
 		if file != nil {
 			file.Close()
 		}
-		file = newFile(log.Level)
-		fileMap[log.Level] = file
+		file = newFile(level)
+		fileMap[level] = file
 	}
 
 	file.WriteString(formatLine(log))
