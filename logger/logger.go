@@ -35,7 +35,6 @@ var (
 	logFileMaxSize int64 = 1 * 1024 * 1024 * 1024
 	outputScreen         = false
 
-	date    string
 	started bool
 	fileMap map[string]*os.File
 	logChan chan *Log
@@ -61,6 +60,7 @@ func Init(config Config) {
 		logChan = make(chan *Log, config.ChannelSize)
 	}
 	fileMap = make(map[string]*os.File)
+
 	go start()
 }
 
@@ -129,7 +129,7 @@ func info(level string, params ...interface{}) {
 }
 
 func newFile(level string) *os.File {
-	date = time.Now().In(timeLocation).Format(fileName)
+	date := time.Now().In(timeLocation).Format(fileName)
 	fileDir := logDir + "/" + level + "/"
 	var fileName = path.Clean(fileDir + date + ".log")
 	ok := pathExists(fileDir)
@@ -139,7 +139,7 @@ func newFile(level string) *os.File {
 		}
 	} else {
 		if getFileSize(fileName) > logFileMaxSize {
-			renameFile(fileDir)
+			renameFile(fileDir, date)
 		}
 	}
 	file, err := os.OpenFile(fileName, os.O_RDWR|os.O_APPEND|os.O_CREATE, 0664)
@@ -149,25 +149,25 @@ func newFile(level string) *os.File {
 	return file
 }
 
-func renameFile(infoFileDir string) {
-	files, _ := ioutil.ReadDir(infoFileDir)
-	var todayFile []os.FileInfo
+func renameFile(fileDir, date string) {
+	files, _ := ioutil.ReadDir(fileDir)
+	var dateFile []os.FileInfo
 	for _, onefile := range files {
 		fileName := onefile.Name()
 		if !onefile.IsDir() && strings.Index(fileName, date) == 0 {
-			todayFile = append(todayFile, onefile)
+			dateFile = append(dateFile, onefile)
 		}
 	}
-	for i := 0; i < len(todayFile)-1; i++ {
-		for j := i + 1; j < len(todayFile); j++ {
-			if getSuffix(todayFile[i].Name()) < getSuffix(todayFile[j].Name()) {
-				todayFile[i], todayFile[j] = todayFile[j], todayFile[i]
+	for i := 0; i < len(dateFile)-1; i++ {
+		for j := i + 1; j < len(dateFile); j++ {
+			if getSuffix(dateFile[i].Name()) < getSuffix(dateFile[j].Name()) {
+				dateFile[i], dateFile[j] = dateFile[j], dateFile[i]
 			}
 		}
 	}
-	for i := range todayFile {
-		os.Rename(infoFileDir+todayFile[i].Name(),
-			infoFileDir+fmt.Sprintf("%s_%d.log", date, len(todayFile)-i))
+	for i := range dateFile {
+		os.Rename(fileDir+dateFile[i].Name(),
+			fileDir+fmt.Sprintf("%s_%d.log", date, len(dateFile)-i))
 	}
 }
 
@@ -192,15 +192,14 @@ func write(log *Log) {
 	case debugLevel, warnLevel, errorLevel:
 		level = log.Level
 	default:
-		// 自定义level打印info中
 		level = infoLevel
 	}
 
 	if file, ok = fileMap[level]; ok {
 		stat, _ := file.Stat()
+		date := strings.Split(stat.Name(), ".")[0]
 		if stat.Size() > logFileMaxSize ||
-			strings.Index(log.Time.In(timeLocation).
-				Format(fileName), date) != 0 {
+			strings.Index(log.Time.In(timeLocation).Format(fileName), date) != 0 {
 			needNewFile = true
 		}
 	} else {
@@ -254,8 +253,10 @@ func formatLine(log *Log) string {
 			log.Line,
 			msgList[i]) + "\n"
 	}
+
 	if outputScreen {
 		fmt.Print(result)
 	}
+
 	return result
 }
