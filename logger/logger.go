@@ -277,13 +277,13 @@ func setLevelColor(level string) string {
 	case infoLevel:
 		color = 32
 	case debugLevel:
-		color = 36
+		color = 34
 	case warnLevel:
 		color = 33
 	case errorLevel:
 		color = 31
 	default:
-		color = 34
+		color = 36
 	}
 	return fmt.Sprintf("\033[%dm%s\033[0m", color, level)
 }
