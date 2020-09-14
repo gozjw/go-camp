@@ -134,7 +134,7 @@ func info(level string, params ...interface{}) {
 
 func newFile(level string) *os.File {
 	date := time.Now().In(timeLocation).Format(fileName)
-	fileDir := logDir + "/" + level + "/"
+	fileDir := logDir + "/" + strings.ToLower(level) + "/"
 	var fileName = path.Clean(fileDir + date + ".log")
 	ok := pathExists(fileDir)
 	if !ok {
