@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -34,10 +35,11 @@ var (
 	timeLocation         = time.Now().Location()
 	logFileMaxSize int64 = 1 * 1024 * 1024 * 1024
 	outputScreen         = false
+	logChan              = make(chan *Log, 1024)
 
 	started bool
 	fileMap map[string]*os.File
-	logChan chan *Log
+	mux     sync.Mutex
 )
 
 func Init(config Config) {
@@ -72,6 +74,8 @@ type Log struct {
 }
 
 func Push(log Log) {
+	mux.Lock()
+	defer mux.Unlock()
 	if !started {
 		panic("logger not start")
 	}
