@@ -249,7 +249,7 @@ func formatLine(log *Log) string {
 	for i := range msgList {
 		result = result + fmt.Sprintf("%s [%s] [%s] %s",
 			log.Time.In(timeLocation).Format(timeFormart),
-			strings.ToUpper(log.Level),
+			setLevelColor(log.Level),
 			log.Line,
 			msgList[i]) + "\n"
 	}
@@ -259,4 +259,20 @@ func formatLine(log *Log) string {
 	}
 
 	return result
+}
+
+func setLevelColor(level string) string {
+	var color int
+	switch level {
+	case infoLevel:
+		color = 32
+	case debugLevel:
+		color = 36
+	case warnLevel:
+		color = 33
+	default:
+		color = 31
+	}
+
+	return fmt.Sprintf("\033[%dm%s\033[0m", color, strings.ToUpper(level))
 }
