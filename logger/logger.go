@@ -20,10 +20,10 @@ type Config struct {
 }
 
 const (
-	debugLevel = "dbg"
-	infoLevel  = "inf"
-	warnLevel  = "wrn"
-	errorLevel = "err"
+	debugLevel = "DBG"
+	infoLevel  = "INF"
+	warnLevel  = "WRN"
+	errorLevel = "ERR"
 
 	fileName    = "2006-01-02"
 	timeFormart = "2006-01-02 15:04:05"
@@ -270,9 +270,10 @@ func setLevelColor(level string) string {
 		color = 36
 	case warnLevel:
 		color = 33
-	default:
+	case errorLevel:
 		color = 31
+	default:
+		color = 34
 	}
-
-	return fmt.Sprintf("\033[%dm%s\033[0m", color, strings.ToUpper(level))
+	return fmt.Sprintf("\033[%dm%s\033[0m", color, level)
 }
