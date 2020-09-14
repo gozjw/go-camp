@@ -18,6 +18,7 @@ type Config struct {
 	TimeLocation   *time.Location
 	ChannelSize    int
 	OutputScreen   bool
+	UseColor       bool
 }
 
 const (
@@ -34,12 +35,13 @@ var (
 	logDir               = "./log/"
 	timeLocation         = time.Now().Location()
 	logFileMaxSize int64 = 1 * 1024 * 1024 * 1024
-	outputScreen         = false
 	logChan              = make(chan *Log, 1024)
 
-	started bool
-	fileMap map[string]*os.File
-	mux     sync.Mutex
+	outputScreen bool
+	useColor     bool
+	started      bool
+	fileMap      map[string]*os.File
+	mux          sync.Mutex
 )
 
 func Init(config Config) {
@@ -56,6 +58,7 @@ func Init(config Config) {
 		timeLocation = config.TimeLocation
 	}
 	outputScreen = config.OutputScreen
+	useColor = config.UseColor
 	if config.ChannelSize == 0 {
 		logChan = make(chan *Log, 1024)
 	} else {
@@ -251,9 +254,12 @@ func formatLine(log *Log) string {
 	var result = ""
 	msgList := strings.Split(log.Message, "\n")
 	for i := range msgList {
+		if useColor {
+			log.Level = setLevelColor(log.Level)
+		}
 		result = result + fmt.Sprintf("%s [%s] [%s] %s",
 			log.Time.In(timeLocation).Format(timeFormart),
-			setLevelColor(log.Level),
+			log.Level,
 			log.Line,
 			msgList[i]) + "\n"
 	}
