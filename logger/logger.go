@@ -42,6 +42,7 @@ var (
 	started      bool
 	fileMap      map[string]*os.File
 	mux          sync.Mutex
+	wg           sync.WaitGroup
 )
 
 func Init(config Config) {
@@ -66,7 +67,9 @@ func Init(config Config) {
 	}
 	fileMap = make(map[string]*os.File)
 
+	wg.Add(1)
 	go start()
+	wg.Done()
 }
 
 type Log struct {
@@ -181,6 +184,7 @@ func renameFile(fileDir, date string) {
 func start() {
 	started = true
 	defer func() { started = false }()
+	wg.Done()
 	for {
 		select {
 		case log := <-logChan:
