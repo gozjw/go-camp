@@ -66,7 +66,6 @@ func Init(config Config) {
 		logChan = make(chan *Log, config.ChannelSize)
 	}
 	fileMap = make(map[string]*os.File)
-
 	wg.Add(1)
 	go start()
 	wg.Wait()
