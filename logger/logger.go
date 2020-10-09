@@ -69,7 +69,7 @@ func Init(config Config) {
 
 	wg.Add(1)
 	go start()
-	wg.Done()
+	wg.Wait()
 }
 
 type Log struct {
