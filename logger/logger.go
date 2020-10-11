@@ -256,21 +256,19 @@ func getSuffix(fileName string) int {
 func formatLine(log *Log) string {
 	var result = ""
 	msgList := strings.Split(log.Message, "\n")
+	if useColor {
+		log.Level = setLevelColor(log.Level)
+	}
 	for i := range msgList {
-		if useColor {
-			log.Level = setLevelColor(log.Level)
-		}
 		result = result + fmt.Sprintf("%s [%s] [%s] %s",
 			log.Time.In(timeLocation).Format(timeFormart),
 			log.Level,
 			log.Line,
 			msgList[i]) + "\n"
 	}
-
 	if outputScreen {
 		fmt.Print(result)
 	}
-
 	return result
 }
 
